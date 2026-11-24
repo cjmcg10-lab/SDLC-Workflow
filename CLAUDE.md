@@ -1,39 +1,31 @@
-# SDLC workflow
+# sdlc-workflow (Claude Code plugin)
 
-A lightweight, repeatable ticket → plan → code → review → PR workflow for Claude Code.
-Copy `.claude/`, `scripts/`, `tests/hooks.test.sh` and this file into another repo, then edit the `GATES` table in
-`scripts/gates.sh` and the Stack section below.
+This repo is both a Claude Code plugin and its own marketplace. Users install it with
+`/plugin marketplace add cjmcg10-lab/SDLC-Workflow` and then `/plugin install sdlc-workflow@sdlc-workflow`.
 
-## Stack
-- Bash + jq. No package manager. Formatters used by the edit hook if installed: prettier, ruff, gofmt, rustfmt, shfmt.
+## Layout
+- `.claude-plugin/plugin.json`: the plugin manifest. **Bump `version` on every release**, or installed copies won't update.
+- `.claude-plugin/marketplace.json`: the marketplace, which lists this repo (`source: "./"`) as the plugin.
+- `agents/`: planner, implementer, reviewer, gate-runner.
+- `skills/`: init, plan, build, fix-bug, review (invoked as `/sdlc-workflow:<name>`).
+- `hooks/hooks.json`: `guard-bash.sh` (PreToolUse on Bash) and `format.sh` (PostToolUse on edits).
+- `scripts/`, `tests/`: this repo's own gates. They are not used by the projects that install the plugin.
 
 ## Commands (the gates)
-| Gate | Command | Notes |
-|------|---------|-------|
-| all | `scripts/gates.sh` | **The** definition of green. Exit 0 = green. |
-| lint | `scripts/lint.sh` | Shell syntax, settings JSON, agent/skill frontmatter. |
-| typecheck | — | SKIP (not applicable) |
-| test | `tests/hooks.test.sh` | Hook behaviour |
-| build | — | SKIP (not applicable) |
+| Gate | Command |
+|------|---------|
+| all | `scripts/gates.sh` (exit 0 = green) |
+| lint | `scripts/lint.sh`: shell syntax, JSON manifests, agent/skill frontmatter |
+| typecheck | SKIP |
+| test | `tests/hooks.test.sh`: hook behaviour |
+| build | SKIP. Also run `claude plugin validate .` before release. |
 
 ## Conventions
-- Tickets: GitHub Issues (`gh issue view <n>`), or `docs/tickets/<ID>.md` when there is no issue.
-- Plans: `docs/plans/<ticket>.md`.
-- Branches: `feat/<ticket>-<slug>`, `fix/<ticket>-<slug>`, `chore/<slug>`. Base branch: `main`.
-- Commits: `<type>(<ticket>): <summary>` (types: feat, fix, test, docs, chore, refactor).
-- PRs: squash-merged by the human only. Worktrees go in `.worktrees/` (gitignored).
-- Off-limits without explicit approval: `.env*`/secrets, deploy scripts/config, DB migrations.
+- Branches: `feat/…`, `fix/…`, `chore/…` off `main`. Commits: `<type>(<ticket>): <summary>`. The human merges.
+- `main` is what users install, so only merge green, validated changes.
 
-## Principles (enforced by the skills and agents)
-1. **Requirements first:** read the ticket's AC (and mockups) before planning. No AC → ask the human.
-2. **Plan before code:** `docs/plans/<ticket>.md` lists the files to touch, the tests to add, and AC → how satisfied.
-3. **Minimal code:** reuse existing code → stdlib → installed deps → new code. No unrequested abstractions, files or deps.
-4. **Author ≠ reviewer:** review runs in a fresh `reviewer` subagent given only the ticket, the plan and the diff.
-5. **Gates decide green:** run `scripts/gates.sh` and check exit codes. Never claim passing without showing output.
-6. **Bounded fix loop:** review → fix → re-review, max 3 rounds, then stop and report what's left.
-7. **Isolation:** each agent that writes code works in its own git worktree, never a shared checkout.
-8. **The human approves** merges, deploys, force-pushes and destructive commands (enforced by
-   `.claude/hooks/guard-bash.sh`; force-push to main is blocked outright).
-
-## Workflow commands
-`/plan <ticket>` · `/build <ticket>` · `/fix-bug <ticket>` · `/review [PR#|branch]`
+## Principles (what the plugin enforces in the projects that use it)
+1. Requirements first: no AC → ask. 2. Plan before code. 3. Minimal code: reuse → stdlib → installed deps → new.
+4. Author ≠ reviewer: a fresh reviewer that sees only the ticket, the plan and the diff. 5. Gates decide green; show
+the output. 6. Max 3 fix rounds. 7. One worktree per agent that writes code. 8. The human approves merges, deploys,
+force-pushes and destructive commands.

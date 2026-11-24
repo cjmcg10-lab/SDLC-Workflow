@@ -1,0 +1,9 @@
+{
+  "name": "sdlc-workflow",
+  "version": "0.1.0",
+  "description": "Lightweight, repeatable SDLC: ticket → plan (approved) → implement in a worktree → mechanical gates → independent review → bounded fix loop → PR.",
+  "author": { "name": "cjmcg10-lab" },
+  "repository": "https://github.com/cjmcg10-lab/SDLC-Workflow",
+  "license": "MIT",
+  "keywords": ["sdlc", "workflow", "code-review", "planning", "tdd"]
+}

@@ -4,14 +4,14 @@ set -u
 cd "$(dirname "$0")/.." || exit 2
 rc=0
 
-for f in scripts/*.sh tests/*.sh .claude/hooks/*.sh; do
+for f in scripts/*.sh tests/*.sh hooks/*.sh; do
   bash -n "$f" || { echo "syntax error: $f"; rc=1; }
   [ -x "$f" ] || { echo "not executable: $f"; rc=1; }
 done
 
-jq empty .claude/settings.json || { echo "invalid JSON: .claude/settings.json"; rc=1; }
+for j in .claude/settings.json .claude-plugin/*.json hooks/hooks.json; do jq empty "$j" || { echo "invalid JSON: $j"; rc=1; }; done
 
-for f in .claude/agents/*.md .claude/skills/*/SKILL.md; do
+for f in agents/*.md skills/*/SKILL.md; do
   head -n1 "$f" | grep -qx -- '---' || { echo "missing frontmatter: $f"; rc=1; continue; }
   fm=$(awk 'NR>1 && /^---$/ {exit} NR>1' "$f")
   grep -q '^name: ' <<<"$fm" || { echo "missing name: $f"; rc=1; }

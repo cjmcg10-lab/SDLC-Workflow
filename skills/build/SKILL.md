@@ -10,7 +10,8 @@ disable-model-invocation: true
 Follow these steps in order. Do not skip any of them, and never write code in this (orchestrator) conversation.
 
 ## 1. Plan
-Run the `/plan` steps (`.claude/skills/plan/SKILL.md`) for `$ARGUMENTS`. If there is no AC, stop and ask.
+If `scripts/gates.sh` is missing, stop and tell the human to run `/sdlc-workflow:init` first.
+Fetch the ticket and run `planner` exactly as the `plan` skill of this plugin does. If there is no AC, stop and ask.
 
 ## 2. Human approval — WAIT
 Show the plan and ask: "Approve this plan? (yes / edits)". **Do not continue until the human says yes.**

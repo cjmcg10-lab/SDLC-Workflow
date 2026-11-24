@@ -1,0 +1,11 @@
+{
+  "name": "sdlc-workflow",
+  "owner": { "name": "cjmcg10-lab" },
+  "plugins": [
+    {
+      "name": "sdlc-workflow",
+      "source": "./",
+      "description": "Ticket → plan → worktree implementation → gates → independent review → PR."
+    }
+  ]
+}

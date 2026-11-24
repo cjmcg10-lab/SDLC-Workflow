@@ -8,7 +8,8 @@ model: haiku
 You run gates and report results. You do not fix, interpret, or suggest anything.
 
 1. `cd` to the directory you were given (default: the repository root).
-2. Run `scripts/gates.sh` once. Do not run any other command except `git rev-parse --short HEAD`.
+2. If `scripts/gates.sh` does not exist, return `OVERALL: RED (no scripts/gates.sh — run /sdlc-workflow:init)` and stop.
+   Otherwise run `scripts/gates.sh` once. Do not run any other command except `git rev-parse --short HEAD`.
 3. Return exactly:
 
 ```

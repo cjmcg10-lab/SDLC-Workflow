@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Tests for .claude/hooks/*. Prints one line per case; exits non-zero on any failure.
+# Tests for hooks/*. Prints one line per case; exits non-zero on any failure.
 set -u
 cd "$(dirname "$0")/.." || exit 2
-guard=.claude/hooks/guard-bash.sh
+guard=hooks/guard-bash.sh
 fails=0
 
 # expect <allow|ask|block> <command> [cwd]
@@ -41,20 +41,21 @@ git -C "$tmp" init -q -b main
 expect block 'git push --force' "$tmp"
 rm -r "$tmp"
 
-# format hook: formats a Python file when ruff exists; no-op for unknown files
+# format hook: formats only when the project opts in; never touches unknown files
+fmt() { jq -n --arg f "$1" '{tool_input: {file_path: $f}}' | hooks/format.sh; }
+check() { # check <name> <file> <expected content>
+  if [ "$(cat "$2")" = "$3" ]; then echo "ok    format: $1"; else echo "FAIL  format: $1"; fails=1; fi
+}
 if command -v ruff >/dev/null; then
-  tmp=$(mktemp -d)
-  printf 'x=[1,2 ,3]\n' >"$tmp/a.py"
-  printf 'x=[1,2 ,3]\n' >"$tmp/a.txt"
-  for f in a.py a.txt; do
-    jq -n --arg f "$tmp/$f" '{tool_input: {file_path: $f}}' | .claude/hooks/format.sh
-  done
-  if [ "$(cat "$tmp/a.py")" = 'x = [1, 2, 3]' ] && [ "$(cat "$tmp/a.txt")" = 'x=[1,2 ,3]' ]; then
-    echo "ok    format: .py formatted, .txt untouched"
-  else
-    echo "FAIL  format hook"; fails=1
-  fi
-  rm -r "$tmp"
+  opted=$(mktemp -d) plain=$(mktemp -d)
+  git -C "$opted" init -q && printf '[tool.ruff]\n' >"$opted/pyproject.toml"
+  git -C "$plain" init -q
+  for d in "$opted" "$plain"; do printf 'x=[1,2 ,3]\n' >"$d/a.py"; printf 'x=[1,2 ,3]\n' >"$d/a.txt"; done
+  for d in "$opted" "$plain"; do fmt "$d/a.py"; fmt "$d/a.txt"; done
+  check ".py formatted when project configures ruff" "$opted/a.py" 'x = [1, 2, 3]'
+  check ".txt untouched" "$opted/a.txt" 'x=[1,2 ,3]'
+  check ".py untouched when project has no formatter config" "$plain/a.py" 'x=[1,2 ,3]'
+  rm -r "$opted" "$plain"
 else
   echo "skip  format: ruff not installed"
 fi
